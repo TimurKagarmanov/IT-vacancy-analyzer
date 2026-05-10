@@ -7,6 +7,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from location_en import LOCATION_EN
+
 CSV = "vacancies_merged.csv"
 BAR = "#818cf8"
 BAR_LINE = "#c4b5fd"
@@ -108,7 +110,7 @@ def box_salary(frame: pd.DataFrame, x: str, title: str, h: int = 400) -> object:
         marker=dict(color="#e0e7ff", size=3),
     )
     fig.update_layout(yaxis_title="Salary mid (RUB)", xaxis_title=None)
-    if x == "specialty":
+    if x in ("specialty", "loc_en"):
         fig.update_layout(xaxis_tickangle=-35)
     return fig
 
@@ -164,21 +166,23 @@ def main() -> None:
         body.warning("No rows match the filters.")
         st.stop()
 
+    d = d.assign(loc_en=d["location"].map(LOCATION_EN).fillna(d["location"]))
+
     with body:
         a, b, c, e = st.columns(4)
         a.metric("Rows", f"{len(d):,}")
         b.metric("Median salary (RUB)", f"{d['salary_mid'].median():,.0f}")
         c.metric("Specialties", int(d["specialty"].nunique()))
-        e.metric("Locations", int(d["location"].nunique()))
+        e.metric("Locations", int(d["loc_en"].nunique()))
 
-        tl = d["location"].value_counts().head(12).reset_index()
+        tl = d["loc_en"].value_counts().head(12).reset_index()
         tl.columns = ["Location", "Count"]
         ml = (
-            d[d["location"].isin(tl["Location"])]
-            .groupby("location", as_index=False)["salary_mid"]
+            d[d["loc_en"].isin(tl["Location"])]
+            .groupby("loc_en", as_index=False)["salary_mid"]
             .median()
             .sort_values("salary_mid")
-            .rename(columns={"location": "Location", "salary_mid": "Median"})
+            .rename(columns={"loc_en": "Location", "salary_mid": "Median"})
         )
         x1, x2 = st.columns(2)
         x1.plotly_chart(bar_h(tl, "Count", "Location", "Top locations"), width="stretch")
@@ -188,9 +192,9 @@ def main() -> None:
         )
 
         loc_top = tl["Location"].tolist()
-        sub_loc = d[d["location"].isin(loc_top)]
+        sub_loc = d[d["loc_en"].isin(loc_top)]
         st.plotly_chart(
-            box_salary(sub_loc, "location", "Salary distribution by location (RUB), top 12"),
+            box_salary(sub_loc, "loc_en", "Salary distribution by location (RUB), top 12"),
             width="stretch",
         )
 
