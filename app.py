@@ -129,7 +129,16 @@ def main() -> None:
         unsafe_allow_html=True,
     )
 
-    st.header("Vacancies")
+    st.header("IT Vacancies Dashboard")
+
+    st.markdown(
+        """
+        **IT Vacancies Dashboard** aggregates IT job listings from several sources, normalizes fields
+        (salary, location, specialty, skills), and merges them into a single dataset. This dashboard
+        explores the merged file: filters, summary metrics, bar charts for locations and specialties,
+        and boxplots for salary distributions. Salaries are labeled as **RUB**.
+        """.strip()
+    )
 
     path = find_csv()
     if not path.is_file():
