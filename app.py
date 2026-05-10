@@ -83,10 +83,19 @@ def apply_base_layout(fig, title: str, h: int) -> None:
     )
 
 
-def bar_h(frame: pd.DataFrame, x: str, y: str, title: str, h: int = 300) -> object:
+def bar_h(
+    frame: pd.DataFrame,
+    x: str,
+    y: str,
+    title: str,
+    h: int = 300,
+    x_axis_title: str | None = None,
+) -> object:
     fig = px.bar(frame, x=x, y=y, orientation="h", title=title)
     apply_base_layout(fig, title, h)
     fig.update_traces(marker_color=BAR, marker_line=dict(color=BAR_LINE, width=1))
+    if x_axis_title:
+        fig.update_layout(xaxis_title=x_axis_title)
     return fig
 
 
@@ -98,7 +107,7 @@ def box_salary(frame: pd.DataFrame, x: str, title: str, h: int = 400) -> object:
         line=dict(color="#eef2ff", width=1.5),
         marker=dict(color="#e0e7ff", size=3),
     )
-    fig.update_layout(yaxis_title="Salary (mid)", xaxis_title=None)
+    fig.update_layout(yaxis_title="Salary mid (RUB)", xaxis_title=None)
     if x == "specialty":
         fig.update_layout(xaxis_tickangle=-35)
     return fig
@@ -129,7 +138,7 @@ def main() -> None:
 
     df = load(path)
     if df.empty:
-        st.warning("No rows with a numeric salary.")
+        st.warning("No rows with a numeric salary (RUB).")
         st.stop()
 
     filt, body = st.columns([1, 3], gap="medium")
@@ -138,7 +147,7 @@ def main() -> None:
         spec_list = sorted(df["specialty"].unique().tolist())
         picked = st.multiselect("Specialty", spec_list, default=spec_list)
         lo, hi = float(df["salary_mid"].min()), float(df["salary_mid"].max())
-        r0, r1 = st.slider("Salary (mid)", lo, hi, (lo, hi))
+        r0, r1 = st.slider("Salary mid (RUB)", lo, hi, (lo, hi))
 
     d = df[df["specialty"].isin(picked)] if picked else df
     d = d[(d["salary_mid"] >= r0) & (d["salary_mid"] <= r1)]
@@ -149,7 +158,7 @@ def main() -> None:
     with body:
         a, b, c, e = st.columns(4)
         a.metric("Rows", f"{len(d):,}")
-        b.metric("Median salary", f"{d['salary_mid'].median():,.0f}")
+        b.metric("Median salary (RUB)", f"{d['salary_mid'].median():,.0f}")
         c.metric("Specialties", int(d["specialty"].nunique()))
         e.metric("Locations", int(d["location"].nunique()))
 
@@ -164,12 +173,15 @@ def main() -> None:
         )
         x1, x2 = st.columns(2)
         x1.plotly_chart(bar_h(tl, "Count", "Location", "Top locations"), width="stretch")
-        x2.plotly_chart(bar_h(ml, "Median", "Location", "Median salary by location"), width="stretch")
+        x2.plotly_chart(
+            bar_h(ml, "Median", "Location", "Median salary by location (RUB)", x_axis_title="Median (RUB)"),
+            width="stretch",
+        )
 
         loc_top = tl["Location"].tolist()
         sub_loc = d[d["location"].isin(loc_top)]
         st.plotly_chart(
-            box_salary(sub_loc, "location", "Salary distribution by location (top 12)"),
+            box_salary(sub_loc, "location", "Salary distribution by location (RUB), top 12"),
             width="stretch",
         )
 
@@ -184,12 +196,15 @@ def main() -> None:
         )
         y1, y2 = st.columns(2)
         y1.plotly_chart(bar_h(sn, "Count", "Specialty", "Specialties (count)"), width="stretch")
-        y2.plotly_chart(bar_h(ms, "Median", "Specialty", "Median salary by specialty"), width="stretch")
+        y2.plotly_chart(
+            bar_h(ms, "Median", "Specialty", "Median salary by specialty (RUB)", x_axis_title="Median (RUB)"),
+            width="stretch",
+        )
 
         spec_top = sn["Specialty"].tolist()
         sub_spec = d[d["specialty"].isin(spec_top)]
         st.plotly_chart(
-            box_salary(sub_spec, "specialty", "Salary distribution by specialty (top 12)"),
+            box_salary(sub_spec, "specialty", "Salary distribution by specialty (RUB), top 12"),
             width="stretch",
         )
 
